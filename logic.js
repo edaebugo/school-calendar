@@ -77,3 +77,20 @@ export function previewView(events, year, months) {
   }
   return { schoolYear: year, months: [...months], items, confirmedAt: null };
 }
+
+/* ---- 학사 계획(교직원용과 같은 구성: 날짜·요일·학사 내용) ---- */
+/** 학기 구분: 3~7월 = 1학기(0), 그 밖 = 2학기(1) */
+export const semOfMonth = (m) => (m >= 3 && m <= 7 ? 0 : 1);
+export const semMonths = (ymList, sem) => ymList.filter((ym) => semOfMonth(Number(ym.slice(5, 7))) === sem);
+/** 한 달의 날짜 줄: [{d, day, dow, we(주말), items:[...]}]. items는 그 달 확정본에서 온 일정(학년 보기 적용)이고 휴업·공휴일이 있으면 off=true */
+export function planRows(items, ym) {
+  const n = daysIn(ym), rows = [];
+  for (let i = 1; i <= n; i++) {
+    const d = `${ym}-${pad(i)}`, dow = new Date(`${d}T00:00:00Z`).getUTCDay(), its = itemsOn(items, d);
+    rows.push({ d, day: i, dow, we: dow === 0 || dow === 6, off: its.some((x) => x.kind === 'off'), items: its });
+  }
+  return rows;
+}
+/** 학기 보기에서 한 줄에 놓을 달 수(화면 폭 px): 좁으면 1, 넓으면 최대 4 */
+export const perRowFor = (w) => (w < 560 ? 1 : w < 820 ? 2 : w < 1100 ? 3 : 4);
+export const chunk = (list, size) => { const out = []; for (let i = 0; i < list.length; i += Math.max(1, size)) out.push(list.slice(i, i + size)); return out; };
