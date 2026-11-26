@@ -94,3 +94,28 @@ export function planRows(items, ym) {
 /** 학기 보기에서 한 줄에 놓을 달 수(화면 폭 px): 좁으면 1, 넓으면 최대 4 */
 export const perRowFor = (w) => (w < 560 ? 1 : w < 820 ? 2 : w < 1100 ? 3 : 4);
 export const chunk = (list, size) => { const out = []; for (let i = 0; i < list.length; i += Math.max(1, size)) out.push(list.slice(i, i + size)); return out; };
+
+/* ---- 일정 검색(교직원용과 같은 구성: 검색어·지난 일정 숨기기·내 달력에 담기). 교직원에게만 필요한 것은 없다. ---- */
+/** 달마다 따로 온 일정을 합쳐 같은 일정은 한 번만, 시작일 순으로 */
+export function uniqueItems(items) {
+  const seen = new Map();
+  for (const x of items) { const k = [x.startsOn, x.endsOn, x.title, x.grades.join()].join('|'); if (!seen.has(k)) seen.set(k, x); }
+  return [...seen.values()].sort((a, b) => a.startsOn.localeCompare(b.startsOn) || a.title.localeCompare(b.title, 'ko'));
+}
+/** 검색: 제목에 검색어(공백 무시)가 들어 있고, 학년 보기에 맞고, 지난 일정 숨기기면 끝난 일정은 뺀다. today는 'YYYY-MM-DD' */
+export function searchItems(items, { q = '', grade = 0, hidePast = false, today = '' } = {}) {
+  const t = String(q || '').toLowerCase().replace(/\s+/g, '');
+  return uniqueItems(items).filter((x) => forGrade(x, grade) && (!t || x.title.toLowerCase().replace(/\s+/g, '').includes(t)) && (!hidePast || x.endsOn >= today));
+}
+const icsEsc = (v) => String(v).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const ymd = (d) => d.replace(/-/g, '');
+/** 달력 파일(.ics): 하루 종일 일정. now는 'YYYYMMDDTHHMMSSZ'(시험용으로 받는다) */
+export function icsOf(list, { now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '') } = {}) {
+  const out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//이대부속고등학교//학사일정//KO', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:이대부속고등학교 학사일정'];
+  list.forEach((x, i) => {
+    const g = gradeText(x.grades), end = new Date(`${x.endsOn}T00:00:00Z`); end.setUTCDate(end.getUTCDate() + 1);
+    out.push('BEGIN:VEVENT', `UID:${ymd(x.startsOn)}-${i}-${x.title.length}@school-calendar`, `DTSTAMP:${now}`, `DTSTART;VALUE=DATE:${ymd(x.startsOn)}`, `DTEND;VALUE=DATE:${ymd(end.toISOString().slice(0, 10))}`, `SUMMARY:${icsEsc(g ? `${x.title} (${g})` : x.title)}`, 'END:VEVENT');
+  });
+  out.push('END:VCALENDAR');
+  return out.join('\r\n') + '\r\n';
+}
