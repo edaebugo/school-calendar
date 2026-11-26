@@ -109,13 +109,22 @@ export function searchItems(items, { q = '', grade = 0, hidePast = false, today 
 }
 const icsEsc = (v) => String(v).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 const ymd = (d) => d.replace(/-/g, '');
-/** 달력 파일(.ics): 하루 종일 일정. now는 'YYYYMMDDTHHMMSSZ'(시험용으로 받는다) */
+/** RFC 5545 줄 접기: 한 줄은 75옥텟(UTF-8 바이트)까지, 넘으면 CRLF+공백으로 이어 쓴다(글자 중간을 자르지 않는다) */
+export function foldIcs(line) {
+  const enc = new TextEncoder(); if (enc.encode(line).length <= 75) return line;
+  const out = []; let cur = '', bytes = 0, limit = 75;
+  for (const ch of line) { const n = enc.encode(ch).length; if (bytes + n > limit) { out.push(cur); cur = ''; bytes = 0; limit = 74; } cur += ch; bytes += n; }
+  out.push(cur); return out.join('\r\n ');
+}
+const hash36 = (s) => { let h = 5381; for (const c of s) h = ((h << 5) + h + c.codePointAt(0)) >>> 0; return h.toString(36); };
+/** 달력 파일(.ics): 하루 종일 일정. UID는 날짜·제목으로 정해 검색 조건이 바뀌어도 같은 일정은 같은 값이다. now는 'YYYYMMDDTHHMMSSZ'(시험용으로 받는다) */
 export function icsOf(list, { now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '') } = {}) {
-  const out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//이대부속고등학교//학사일정//KO', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:이대부속고등학교 학사일정'];
-  list.forEach((x, i) => {
+  const out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//이대부속고등학교//학사일정//KO', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:이대부속고등학교 학사일정'], seen = new Map();
+  for (const x of list) {
     const g = gradeText(x.grades), end = new Date(`${x.endsOn}T00:00:00Z`); end.setUTCDate(end.getUTCDate() + 1);
-    out.push('BEGIN:VEVENT', `UID:${ymd(x.startsOn)}-${i}-${x.title.length}@school-calendar`, `DTSTAMP:${now}`, `DTSTART;VALUE=DATE:${ymd(x.startsOn)}`, `DTEND;VALUE=DATE:${ymd(end.toISOString().slice(0, 10))}`, `SUMMARY:${icsEsc(g ? `${x.title} (${g})` : x.title)}`, 'END:VEVENT');
-  });
+    const key = `${x.startsOn}|${x.endsOn}|${x.title}|${x.grades.join()}`, n = seen.get(key) ?? 0; seen.set(key, n + 1);
+    out.push('BEGIN:VEVENT', `UID:${ymd(x.startsOn)}-${hash36(key)}${n ? `-${n}` : ''}@school-calendar`, `DTSTAMP:${now}`, `DTSTART;VALUE=DATE:${ymd(x.startsOn)}`, `DTEND;VALUE=DATE:${ymd(end.toISOString().slice(0, 10))}`, `SUMMARY:${icsEsc(g ? `${x.title} (${g})` : x.title)}`, 'END:VEVENT');
+  }
   out.push('END:VCALENDAR');
-  return out.join('\r\n') + '\r\n';
+  return out.map(foldIcs).join('\r\n') + '\r\n';
 }
