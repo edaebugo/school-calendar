@@ -102,6 +102,10 @@ export function uniqueItems(items) {
   for (const x of items) { const k = [x.startsOn, x.endsOn, x.title, x.grades.join()].join('|'); if (!seen.has(k)) seen.set(k, x); }
   return [...seen.values()].sort((a, b) => a.startsOn.localeCompare(b.startsOn) || a.title.localeCompare(b.title, 'ko'));
 }
+/** 일정 하나를 가리키는 값(체크 상태를 검색이 바뀌어도 기억하는 데 쓴다) */
+export const itemKey = (x) => [x.startsOn, x.endsOn, x.title, x.grades.join()].join('|');
+/** 처음 체크 상태: 공휴일·휴업은 휴대폰 달력에 이미 있는 경우가 많아 빼 두고(필요하면 체크), 학교 일정은 체크해 둔다 */
+export const defaultPicked = (x) => x.kind !== 'off';
 /** 검색: 제목에 검색어(공백 무시)가 들어 있고, 학년 보기에 맞고, 지난 일정 숨기기면 끝난 일정은 뺀다. today는 'YYYY-MM-DD' */
 export function searchItems(items, { q = '', grade = 0, hidePast = false, today = '' } = {}) {
   const t = String(q || '').toLowerCase().replace(/\s+/g, '');

@@ -31,6 +31,7 @@ main{max-width:980px;margin:0 auto;padding:0 12px 28px}
 
 .ftools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 6px}.ftools input[type=search]{flex:1;min-width:180px;font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:8px 12px;min-height:40px}
 .fck{font-size:14px;white-space:nowrap}.fbtn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;min-height:38px;cursor:pointer}.fbtn:disabled{opacity:.4;cursor:default}
+.fi{display:flex;gap:10px;align-items:flex-start;width:100%;cursor:pointer}.fi input{margin-top:5px;flex:0 0 auto}.fmain{font-weight:700}.list li:has(.fi){padding:0}.list li .fi{padding:10px 12px}
 .fmh{margin:12px 0 4px;font-weight:700;font-size:14px}.find .list{margin-bottom:6px}
 @media (max-width:520px){.dc{min-height:64px;font-size:10.5px}.list .d{flex-basis:7.6em}}
 @media print{.bar,.nav,.detail{display:none!important}.pwrap{break-inside:auto}.plan tr{break-inside:avoid}body,.pubroot{background:#fff;color:#000}.dc{min-height:70px}}

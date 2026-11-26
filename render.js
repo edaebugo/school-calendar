@@ -1,6 +1,6 @@
 // 학생·학부모 학사일정 화면(공개 화면과 앱 안 미리보기가 같이 쓴다). 교직원용과 같은 구성: [학사 계획](월별·1학기·2학기)과 [달력]. 교직원만 보는 내용(교직원 일정·창체·상태·석식/방과후)은 없다.
 // 문서 또는 shadowRoot 안에 그린다. 아무것도 저장하지 않는다.
-import { inMonth, monthList, filterItems, itemsOn, monthCells, planRows, semMonths, perRowFor, chunk, rangeText, mdText, gradeText, searchItems, icsOf } from './logic.js';
+import { inMonth, monthList, filterItems, itemsOn, monthCells, planRows, semMonths, perRowFor, chunk, rangeText, mdText, gradeText, searchItems, icsOf, itemKey, defaultPicked } from './logic.js';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export const SKELETON = `<header class="top"><div><div class="school">이대부속고등학교</div><h1 data-id="title">학사일정</h1></div></header>
@@ -24,7 +24,7 @@ export const SKELETON = `<header class="top"><div><div class="school">이대부�
 export function mountPublic(root, opts = {}) {
   root.innerHTML = SKELETON;
   const $ = (id) => root.querySelector(`[data-id="${id}"]`);
-  const st = { view: null, months: [], ym: '', grade: 0, tab: 'plan', pmode: 'month', sel: '', fq: '', fpast: true, today: '' };
+  const st = { view: null, months: [], ym: '', grade: 0, tab: 'plan', pmode: 'month', sel: '', fq: '', fpast: true, today: '', picked: new Map() };
   const note = (ym) => (opts.monthNote ? opts.monthNote(ym) || {} : {});
   const width = () => root.clientWidth || root.getBoundingClientRect().width || (typeof innerWidth === 'number' ? innerWidth : 400);
   function state(msg) { $('state').textContent = msg; $('state').hidden = !msg; $('view').hidden = Boolean(msg); }
@@ -57,18 +57,23 @@ export function mountPublic(root, opts = {}) {
   }
   const todayStr = () => st.today || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; })();
   const findList = () => searchItems(st.view.items, { q: st.fq, grade: st.grade, hidePast: st.fpast, today: todayStr() });
+  const isPicked = (x) => (st.picked.has(itemKey(x)) ? st.picked.get(itemKey(x)) : defaultPicked(x));
   function findShell() {
-    $('body').innerHTML = `<div class="find"><div class="ftools"><input type="search" data-id="fq" placeholder="검색어 입력 (예: 고사, 방학, 체육대회)" value="${esc(st.fq)}" aria-label="일정 검색"><label class="fck"><input type="checkbox" data-id="fpast" ${st.fpast ? 'checked' : ''}> 지난 일정 숨기기</label><button type="button" class="fbtn" data-id="fics">검색 결과를 내 달력에 담기(.ics)</button></div><p class="foot">검색 결과가 휴대폰·컴퓨터 달력에 들어가는 파일로 내려받아져요.</p><div data-id="fres"></div></div>`;
+    $('body').innerHTML = `<div class="find"><div class="ftools"><input type="search" data-id="fq" placeholder="검색어 입력 (예: 고사, 방학, 체육대회)" value="${esc(st.fq)}" aria-label="일정 검색"><label class="fck"><input type="checkbox" data-id="fpast" ${st.fpast ? 'checked' : ''}> 지난 일정 숨기기</label></div><div class="ftools"><button type="button" class="fbtn" data-id="fall">모두 선택</button><button type="button" class="fbtn" data-id="fnone">모두 해제</button><button type="button" class="fbtn fmain" data-id="fics">체크한 일정을 내 달력에 담기(.ics)</button></div><p class="foot">체크한 일정만 내 달력에 들어가요. 삼일절·추석 같은 공휴일은 휴대폰 달력에 이미 있어서 처음부터 빼 두었어요(필요하면 체크).</p><div data-id="fres"></div></div>`;
     findDraw();
   }
   function findDraw() {
     const list = findList(), by = {};
     list.forEach((x) => (by[x.startsOn.slice(0, 7)] ||= []).push(x));
-    $('fres').innerHTML = list.length ? Object.keys(by).sort().map((k) => `<div class="fmh">${k.slice(0, 4)}년 ${Number(k.slice(5))}월</div><ul class="list">${by[k].map((x) => `<li class="${x.kind}"><span class="d">${esc(rangeText(x.startsOn, x.endsOn))}</span><span class="t">${esc(x.title)}${gradeText(x.grades) ? `<span class="tag">${esc(gradeText(x.grades))}</span>` : ''}</span></li>`).join('')}</ul>`).join('') : '<div class="empty">찾은 일정이 없어요.</div>';
-    const btn = $('fics'); if (btn) btn.disabled = !list.length;
+    $('fres').innerHTML = list.length ? Object.keys(by).sort().map((k) => `<div class="fmh">${k.slice(0, 4)}년 ${Number(k.slice(5))}월</div><ul class="list">${by[k].map((x) => `<li class="${x.kind}"><label class="fi"><input type="checkbox" data-fp="${esc(itemKey(x))}" ${isPicked(x) ? 'checked' : ''}><span class="d">${esc(rangeText(x.startsOn, x.endsOn))}</span><span class="t">${esc(x.title)}${gradeText(x.grades) ? `<span class="tag">${esc(gradeText(x.grades))}</span>` : ''}</span></label></li>`).join('')}</ul>`).join('') : '<div class="empty">찾은 일정이 없어요.</div>';
+    findCount();
+  }
+  function findCount() {
+    const n = findList().filter(isPicked).length, btn = $('fics');
+    if (btn) { btn.disabled = !n; btn.textContent = n ? `체크한 일정 ${n}개를 내 달력에 담기(.ics)` : '체크한 일정을 내 달력에 담기(.ics)'; }
   }
   function downloadIcs() {
-    const list = findList(); if (!list.length) return;
+    const list = findList().filter(isPicked); if (!list.length) return;
     const blob = new Blob([icsOf(list)], { type: 'text/calendar' }), a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = `${st.view.year}학년도 학사일정.ics`; (root.ownerDocument || document).body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
@@ -89,12 +94,16 @@ export function mountPublic(root, opts = {}) {
   root.addEventListener('click', (e) => {
     const g = e.target.closest('[data-g]'), t = e.target.closest('[data-tab]'), pm = e.target.closest('[data-pm]'), c = e.target.closest('.dc[data-d]'), nav = e.target.closest('[data-id="prev"],[data-id="next"]');
     if (e.target.closest('[data-id="fics"]')) { downloadIcs(); return; }
+    if (e.target.closest('[data-id="fall"]') || e.target.closest('[data-id="fnone"]')) { const on = Boolean(e.target.closest('[data-id="fall"]')); findList().forEach((x) => st.picked.set(itemKey(x), on)); findDraw(); return; }
     if (g) { st.grade = Number(g.dataset.g); draw(); } else if (t) { st.tab = t.dataset.tab; draw(); } else if (pm) { st.pmode = pm.dataset.pm; draw(); }
     else if (c) { st.sel = st.sel === c.dataset.d ? '' : c.dataset.d; draw(); }
     else if (nav) { const k = st.months.indexOf(st.ym) + (nav.dataset.id === 'next' ? 1 : -1); if (st.months[k]) { st.ym = st.months[k]; st.sel = ''; draw(); } }
   });
   root.addEventListener('input', (e) => { if (e.target.matches && e.target.matches('[data-id="fq"]')) { st.fq = e.target.value; findDraw(); } });
-  root.addEventListener('change', (e) => { if (e.target.matches && e.target.matches('[data-id="fpast"]')) { st.fpast = e.target.checked; findDraw(); } });
+  root.addEventListener('change', (e) => {
+    if (e.target.matches && e.target.matches('[data-id="fpast"]')) { st.fpast = e.target.checked; findDraw(); }
+    else if (e.target.matches && e.target.matches('[data-fp]')) { st.picked.set(e.target.dataset.fp, e.target.checked); findCount(); }
+  });
   $('month').addEventListener('change', (e) => { st.ym = e.target.value; st.sel = ''; draw(); });
   if (typeof addEventListener === 'function') addEventListener('resize', () => { if (st.view && st.tab === 'plan' && st.pmode !== 'month') draw(); });
   return {
