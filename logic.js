@@ -58,7 +58,7 @@ export function explain(err) {
 
 /* ---- 앱 안 미리보기용: 서버(api.calendar_public_view)와 같은 규칙으로 일정 걸러내기 ----
    학사 내용 줄만: 교직원 전용·창체·요일 변경·숨김·진도 제외 표시·상태 이름만 있는 하루짜리 일정(공백·대소문자 무시)은 뺀다. */
-const STATUS_TITLES = new Set(['휴업', '행사(neis제외)', '진도제외', '중간고사', '기말고사', '요일변경']);
+const STATUS_TITLES = new Set(['휴업', '행사(neis제외)', '행사(neis포함)', '진도제외', '중간고사', '기말고사', '요일변경']);
 export function isPublicEvent(e) {
   if (!e || e.hidden || e.staffOnly || e.category || (e.appliedWeekday != null && e.appliedWeekday !== '')) return false;
   if (e.dayStatus === 'progress_off') return false;
