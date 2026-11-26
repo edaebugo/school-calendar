@@ -1,0 +1,23 @@
+:root,:host{--bg:#f7f5f1;--card:#fff;--ink:#1c2420;--muted:#6a736d;--line:#e2ded6;--navy:#1f2d4d;--red:#b3261e;--blue:#1f5fa8;--soft:#faf8f4}
+@media (prefers-color-scheme:dark){:root,:host{--bg:#161a18;--card:#1e2421;--ink:#e8eeea;--muted:#9aa8a0;--line:#2f3833;--navy:#9db4e6;--red:#f0867d;--blue:#8ab4f0;--soft:#232a26}}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg)}.pubroot{background:var(--bg);color:var(--ink);font:16px/1.5 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+.top{padding:14px 16px 8px}.school{color:var(--muted);font-size:13px}h1{margin:0;font-size:24px}
+main{max-width:980px;margin:0 auto;padding:0 12px 28px}
+.notice{margin:6px 0 10px;padding:10px 12px;border-radius:12px;background:rgba(31,95,168,.1);border:1px solid var(--line)}
+.state{margin:30px 0;text-align:center;color:var(--muted)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin:6px 0 10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips button,.nav button,.nav select{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 14px;min-height:38px}
+.chips button[aria-pressed=true]{background:var(--navy);color:var(--bg);border-color:var(--navy);font-weight:700}
+.nav{display:flex;gap:8px;align-items:center;margin:0 0 10px}.nav select{flex:1;border-radius:12px;text-align:center}.nav button{min-width:44px;font-size:20px;padding:4px 10px}.nav button:disabled{opacity:.35}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.dh{padding:6px 2px;text-align:center;font-size:13px;font-weight:700;background:var(--soft);border-bottom:1px solid var(--line)}.dh:first-child{color:var(--red)}.dh:last-child{color:var(--blue)}
+.dc{min-height:78px;padding:3px 3px 4px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11.5px;line-height:1.3;min-width:0;cursor:pointer}.dc:nth-child(7n+7){border-right:0}
+.dc.out{background:var(--soft);visibility:hidden}.dc.sel{outline:2px solid var(--navy);outline-offset:-2px}
+.dn{display:block;font-weight:700;font-size:13px;margin-bottom:1px}.dc:nth-child(7n+8) .dn{color:var(--red)}.dc:nth-child(7n+7) .dn{color:var(--blue)}
+.ev{display:block;margin:1px 0;padding:0 3px;border-radius:4px;background:rgba(31,45,77,.12);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media (max-width:520px){.ev{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}.ev.off{background:rgba(179,38,30,.14);color:var(--red)}
+.detail{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}.detail b{display:block;margin-bottom:4px}
+.list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}.list li{display:flex;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line)}.list li:last-child{border-bottom:0}
+.list .d{flex:0 0 9.5em;color:var(--muted);font-size:14px}.list .t{flex:1;min-width:0;overflow-wrap:anywhere}.list .off .t{color:var(--red)}.tag{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.empty{padding:22px;text-align:center;color:var(--muted)}.foot{margin:12px 0 0;color:var(--muted);font-size:12.5px}
+@media (max-width:520px){.dc{min-height:64px;font-size:10.5px}.list .d{flex-basis:7.6em}}
+@media print{.bar,.nav,.detail{display:none!important}body,.pubroot{background:#fff;color:#000}.dc{min-height:70px}}
